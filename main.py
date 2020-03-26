@@ -4,7 +4,6 @@ import subprocess
 
 # Download the notebook you want to check for plagiarism and place it in the same folder as this script.
 
-COMPETITON_ARG = "--competition house-prices-advanced-regression-techniques"
 NB_KERNEL_ARG = "--kernel-type notebook"
 SP_KERNEL_ARG = "--kernel-type script"
 LIST_KERNELS_CMD = f"kaggle kernels list --page-size 100 --language python -v"
@@ -13,10 +12,9 @@ PULL_KERNEL_CMD = "kaggle kernels pull"
 NBCONVERT_ARGS = "--TemplateExporter.exclude_markdown=True --no-prompt"
 
 
-def download_scripts(page_num):
-    sp_out = subprocess.Popen(f"{LIST_KERNELS_CMD} {COMPETITON_ARG} {SP_KERNEL_ARG} --page {page_num}".split(),
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT)
+def download_scripts(competition_name, page_num):
+    cmd_tokens = f"{LIST_KERNELS_CMD} {SP_KERNEL_ARG} --compeittion {competition_name} --page {page_num}".split()
+    sp_out = subprocess.Popen(cmd_tokens, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     stdout, stderr = sp_out.communicate()
     lines = stdout.splitlines()[1:]
@@ -46,10 +44,9 @@ def download_scripts(page_num):
     return 0
 
 
-def download_notebooks(page_num):
-    nb_out = subprocess.Popen(f"{LIST_KERNELS_CMD} {COMPETITON_ARG} {NB_KERNEL_ARG} --page {page_num}".split(),
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT)
+def download_notebooks(competition_name, page_num):
+    cmd_tokens = f"{LIST_KERNELS_CMD} {NB_KERNEL_ARG} --competition {competition_name} --page {page_num}".split()
+    nb_out = subprocess.Popen(cmd_tokens, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     stdout, stderr = nb_out.communicate()
     lines = stdout.splitlines()[1:]
@@ -108,21 +105,14 @@ def check_scripts(reference_nb_name):
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
-        page = int(sys.argv[2])
-        if page > 0:
-            download_notebooks(page)
-        else:
-            print("Page must be greater than 0.")
-    elif len(sys.argv) == 2:
         page = 1
-        while download_notebooks(page) == 0:
+        while download_notebooks(sys.argv[1], page) == 0:
             page += 1
         page = 1
-        while download_scripts(page) == 0:
+        while download_scripts(sys.argv[1], page) == 0:
             page += 1
-        check_scripts(sys.argv[1])
+        check_scripts(sys.argv[2])
     else:
-        print(
-            "This script downloads Jupyter Notebooks from the Kaggle 'house-prices-advanced-regression-techniques' competition and compares them to a reference notebook.")
-        print("Usage: python main.py <reference_notebook_filename> <page_number>")
-        print("Omitting page_number will make the script check against as many notebooks and scripts as possible.")
+        print("This script downloads all Python notebooks/scripts from a Kaggle competition and compares them to a reference notebook.")
+        print("Usage: python main.py <competition_name> <reference_notebook_filename>")
+        print("Note that some Notebooks may not be able to be converted.")
